@@ -1,4 +1,4 @@
-from app.providers.openai_provider import OpenAIProvider
+from app.providers.openrouter_provider import OpenRouterProvider
 from app.providers.ollama_provider import OllamaProvider
 
 from app.exceptions import ProviderException
@@ -6,29 +6,28 @@ from app.exceptions import ProviderException
 
 class ProviderFactory:
     """
-    Factory responsible for selecting the correct LLM provider
-    based on the requested model name.
+    Factory responsible for selecting the correct provider.
     """
 
     PROVIDERS = {
 
-        "gpt": OpenAIProvider,
+        # Cloud Models (OpenRouter)
+        "gpt": OpenRouterProvider,
+        "deepseek": OpenRouterProvider,
+        "gemma": OpenRouterProvider,
+        "claude": OpenRouterProvider,
+        "gemini": OpenRouterProvider,
 
+        # Local Models (Ollama)
         "llama": OllamaProvider,
-
         "mistral": OllamaProvider,
-
         "phi": OllamaProvider,
-
         "qwen": OllamaProvider,
 
     }
 
     @classmethod
-    def get_provider(
-        cls,
-        model: str
-    ):
+    def get_provider(cls, model: str):
 
         if not model:
 
