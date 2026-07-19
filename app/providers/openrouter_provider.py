@@ -29,6 +29,7 @@ class OpenRouterProvider(BaseProvider):
         self,
         prompt: str,
         model: str,
+        stream: bool = False,
     ) -> str:
 
         headers = {

@@ -1,6 +1,10 @@
+import time
+
 from app.cache.cache_manager import CacheManager
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_store_service import VectorStoreService
+from app.services.cache_policy_service import CachePolicyService
+from app.services.metrics_service import MetricsService
 from app.providers.provider_factory import ProviderFactory
 from app.utils.hashing import hash_text
 from app.logger import logger
@@ -16,21 +20,6 @@ from app.exceptions import (
 class ChatService:
     """
     Main orchestration service for CacheMind.
-
-    Flow:
-    User Request
-            ↓
-    Generate Embedding
-            ↓
-    Semantic Search (FAISS)
-            ↓
-      Cache Hit / Miss
-            ↓
-    Provider (if needed)
-            ↓
-    Store in Redis + FAISS
-            ↓
-    Return Response
     """
 
     def __init__(self):
@@ -38,6 +27,19 @@ class ChatService:
         self.cache = CacheManager()
         self.embedding_service = EmbeddingService()
         self.vector_store = VectorStoreService()
+        self.policy = CachePolicyService()
+        self.metrics = MetricsService()
+
+    # ---------------------------------
+    # Stream Cached Response
+    # ---------------------------------
+
+    def _stream_cached_response(self, text: str):
+
+        words = text.split()
+
+        for word in words:
+            yield word + " "
 
     def ask(
         self,
@@ -46,9 +48,14 @@ class ChatService:
         temperature: float,
         max_tokens: int,
         system_prompt: str,
+        stream: bool = False,
     ):
 
         logger.info("ChatService called")
+
+        start_time = time.perf_counter()
+
+        self.metrics.request()
 
         # ---------------------------------
         # Generate Metadata
@@ -69,18 +76,18 @@ class ChatService:
         except EmbeddingException:
 
             logger.exception("Embedding generation failed.")
-
             raise
 
         except Exception:
 
             logger.exception("Unexpected embedding error.")
-
             raise
 
         # ---------------------------------
         # Semantic Search
         # ---------------------------------
+
+        cache_start = time.perf_counter()
 
         try:
 
@@ -90,6 +97,8 @@ class ChatService:
 
             result = self.vector_store.search(embedding)
 
+            cache_elapsed = time.perf_counter() - cache_start
+
             logger.info(
                 f"FAISS Search Result: {result}"
             )
@@ -97,13 +106,11 @@ class ChatService:
         except VectorStoreException:
 
             logger.exception("Vector Store search failed.")
-
             raise
 
         except Exception:
 
             logger.exception("Unexpected FAISS error.")
-
             raise
 
         # ---------------------------------
@@ -119,23 +126,77 @@ class ChatService:
             except CacheException:
 
                 logger.exception("Redis lookup failed.")
-
                 raise
 
             logger.info(f"Redis Entry: {entry}")
 
             if entry:
 
-                if (
-                    entry.system_prompt_hash == system_prompt_hash
-                    and entry.model == model
-                    and entry.temperature == temperature
-                    and entry.max_tokens == max_tokens
+                if self.policy.should_use_cache(
+                    similarity=result["score"],
+                    cached_entry=entry,
+                    model=model,
+                    system_prompt_hash=system_prompt_hash,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
                 ):
 
                     logger.info(
-                        f"Semantic Cache HIT "
-                        f"(Similarity={result['score']:.4f})"
+                        f"Semantic Cache HIT (Similarity={result['score']:.4f})"
+                    )
+
+                    self.metrics.cache_hit(
+                        result["score"]
+                    )
+
+                    self.metrics.cache_time(cache_elapsed)
+
+                    self.metrics.save_tokens(
+                        entry.response
+                    )
+
+                    # ---------------------------------
+                    # Stream Cached Response
+                    # ---------------------------------
+
+                    if stream:
+
+                        logger.info(
+                            "Streaming cached response."
+                        )
+
+                        elapsed = (
+                            time.perf_counter()
+                            - start_time
+                        )
+
+                        self.metrics.request_time(
+                            elapsed
+                        )
+
+                        logger.info(
+                            f"Request Latency: {elapsed*1000:.2f} ms"
+                        )
+
+                        return self._stream_cached_response(
+                            entry.response
+                        )
+
+                    elapsed = (
+                        time.perf_counter()
+                        - start_time
+                    )
+
+                    self.metrics.request_time(
+                        elapsed
+                    )
+
+                    logger.info(
+                        f"Request Latency: {elapsed*1000:.2f} ms"
+                    )
+
+                    logger.info(
+                        f"Cache Latency: {cache_elapsed*1000:.2f} ms"
                     )
 
                     return {
@@ -158,6 +219,8 @@ class ChatService:
 
             logger.info("Semantic Cache MISS.")
 
+            self.metrics.cache_miss()
+
         # ---------------------------------
         # Provider Call
         # ---------------------------------
@@ -168,23 +231,102 @@ class ChatService:
                 f"Calling ProviderFactory ({model})"
             )
 
+            logger.info(
+                f"Requested Model: {model}"
+            )
+
             provider = ProviderFactory.get_provider(model)
 
-            answer = provider.generate(
-                prompt=prompt,
-                model=model,
+            logger.info(
+                f"Selected Provider: {provider.__class__.__name__}"
             )
+
+            try:
+
+                self.metrics.provider_call()
+
+                provider_start = time.perf_counter()
+
+                answer = provider.generate(
+                    prompt=prompt,
+                    model=model,
+                    stream=stream,
+                )
+
+                provider_elapsed = (
+                    time.perf_counter()
+                    - provider_start
+                )
+
+                self.metrics.provider_time(
+                    provider_elapsed
+                )
+
+                logger.info(
+                    "Primary provider response received."
+                )
+
+            except Exception as primary_error:
+
+                logger.warning(
+                    f"Primary provider failed: {primary_error}"
+                )
+
+                logger.info(
+                    "Attempting OpenRouter fallback..."
+                )
+
+                from app.providers.openrouter_provider import OpenRouterProvider
+
+                fallback_provider = OpenRouterProvider()
+
+                answer = fallback_provider.generate(
+                    prompt=prompt,
+                    model="openai/gpt-4.1-mini",
+                    stream=False,
+                )
+
+                logger.info(
+                    "Fallback provider response received."
+                )
+
+            # ---------------------------------
+            # Stream Provider Response
+            # ---------------------------------
+
+            if stream:
+
+                logger.info(
+                    "Streaming provider response."
+                )
+
+                elapsed = (
+                    time.perf_counter()
+                    - start_time
+                )
+
+                self.metrics.request_time(
+                    elapsed
+                )
+
+                logger.info(
+                    f"Request Latency: {elapsed*1000:.2f} ms"
+                )
+
+                return answer
 
         except ProviderException:
 
-            logger.exception("Provider selection failed.")
-
+            logger.exception(
+                "Provider selection failed."
+            )
             raise
 
         except Exception:
 
-            logger.exception("Provider request failed.")
-
+            logger.exception(
+                "Provider request failed."
+            )
             raise
 
         # ---------------------------------
@@ -229,6 +371,23 @@ class ChatService:
         # ---------------------------------
         # Return Provider Response
         # ---------------------------------
+
+        elapsed = (
+            time.perf_counter()
+            - start_time
+        )
+
+        self.metrics.request_time(
+            elapsed
+        )
+
+        logger.info(
+            f"Request Latency: {elapsed*1000:.2f} ms"
+        )
+
+        logger.info(
+            f"Provider Latency: {provider_elapsed*1000:.2f} ms"
+        )
 
         return {
             "source": "provider",

@@ -1,14 +1,18 @@
 import redis
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.exceptions import CacheException
 from app.config import (
     REDIS_HOST,
     REDIS_PORT,
     CACHE_TTL,
+    MAX_CACHE_ENTRIES,
+    EVICTION_POLICY,
 )
 
 from app.models.cache_entry import CacheEntry
+from app.services.eviction_policy_service import EvictionPolicyService
+from app.logger import logger
 
 
 class CacheManager:
@@ -34,6 +38,42 @@ class CacheManager:
 
     # -----------------------------------------
 
+    # -----------------------------------------
+
+    def _update_entry(self, entry: "CacheEntry"):
+
+        self.client.set(
+            f"cache:{entry.id}",
+            entry.model_dump_json(),
+            ex=entry.ttl
+        )
+
+    # -----------------------------------------
+
+    def _evict_if_needed(self):
+
+        current_size = self.count()
+
+        if current_size < MAX_CACHE_ENTRIES:
+            return
+
+        entries = self.get_all_entries()
+
+        victim = EvictionPolicyService.select_victim(
+            entries,
+            EVICTION_POLICY,
+        )
+
+        if victim:
+
+            logger.info(
+                f"Evicting cache entry {victim.id}"
+            )
+
+            self.delete(victim.id)
+
+    # -----------------------------------------
+
     def set(
         self,
         cache_id: int,
@@ -48,6 +88,10 @@ class CacheManager:
 
         try:
 
+            now = datetime.now()
+
+            self._evict_if_needed()
+
             entry = CacheEntry(
                 id=cache_id,
                 prompt=prompt,
@@ -56,15 +100,15 @@ class CacheManager:
                 system_prompt_hash=system_prompt_hash,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                timestamp=datetime.utcnow(),
-                ttl=ttl
+                timestamp=now,
+                ttl=ttl,
+                created_at=now,
+                last_accessed=now,
+                expires_at=now + timedelta(seconds=ttl),
+                access_count=1,
             )
 
-            self.client.set(
-                f"cache:{cache_id}",
-                entry.model_dump_json(),
-                ex=ttl
-            )
+            self._update_entry(entry)
 
         except Exception as e:
 
@@ -87,13 +131,16 @@ class CacheManager:
 
             entry = CacheEntry.model_validate_json(data)
 
+            if datetime.now() > entry.expires_at:
+
+                self.delete(cache_id)
+                return None
+
+            entry.last_accessed = datetime.now()
+            entry.access_count += 1
             entry.hit_count += 1
 
-            self.client.set(
-                f"cache:{cache_id}",
-                entry.model_dump_json(),
-                ex=entry.ttl
-            )
+            self._update_entry(entry)
 
             return entry
 
@@ -134,3 +181,60 @@ class CacheManager:
             raise CacheException(
                 f"Failed to check cache entry: {e}"
             )
+
+    # -----------------------------------------
+
+    def count(self) -> int:
+        """
+        Returns the total number of cache entries.
+        """
+
+        try:
+
+            return len(
+                self.client.keys("cache:*")
+            )
+
+        except Exception as e:
+
+            raise CacheException(
+                f"Failed to count cache entries: {e}"
+            )
+
+    # -----------------------------------------
+
+    def get_all_entries(self):
+        """
+        Returns all cache entries.
+        """
+
+        try:
+
+            entries = []
+
+            for key in self.client.keys("cache:*"):
+
+                data = self.client.get(key)
+
+                if data:
+
+                    entries.append(
+                        CacheEntry.model_validate_json(data)
+                    )
+
+            return entries
+
+        except Exception as e:
+
+            raise CacheException(
+                f"Failed to retrieve cache entries: {e}"
+            )
+
+    # -----------------------------------------
+
+    def save_entry(self, entry: CacheEntry):
+        """
+        Saves an updated CacheEntry.
+        """
+
+        self._update_entry(entry)

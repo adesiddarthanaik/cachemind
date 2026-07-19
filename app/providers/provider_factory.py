@@ -6,44 +6,43 @@ from app.exceptions import ProviderException
 
 class ProviderFactory:
     """
-    Factory responsible for selecting the correct provider.
+    Factory responsible for selecting the appropriate LLM provider
+    based on the model name.
     """
 
     PROVIDERS = {
-
-        # Cloud Models (OpenRouter)
+        # ---------- Cloud Models ----------
         "gpt": OpenRouterProvider,
         "deepseek": OpenRouterProvider,
         "gemma": OpenRouterProvider,
         "claude": OpenRouterProvider,
         "gemini": OpenRouterProvider,
 
-        # Local Models (Ollama)
+        # ---------- Local Models ----------
         "llama": OllamaProvider,
         "mistral": OllamaProvider,
         "phi": OllamaProvider,
         "qwen": OllamaProvider,
-
     }
 
     @classmethod
     def get_provider(cls, model: str):
 
         if not model:
-
             raise ProviderException(
                 "Model name cannot be empty."
             )
 
-        model = model.lower()
+        model = model.strip().lower()
 
-        for prefix, provider in cls.PROVIDERS.items():
+        for prefix, provider_cls in cls.PROVIDERS.items():
 
             if model.startswith(prefix):
+                return provider_cls()
 
-                return provider()
+        supported = ", ".join(sorted(cls.PROVIDERS.keys()))
 
         raise ProviderException(
-            f"Unsupported model: '{model}'. "
-            f"Supported model prefixes are: {', '.join(cls.PROVIDERS.keys())}"
+            f"Unsupported model '{model}'. "
+            f"Supported prefixes: {supported}"
         )

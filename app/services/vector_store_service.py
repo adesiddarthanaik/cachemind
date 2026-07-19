@@ -8,9 +8,8 @@ from app.config import (
     FAISS_DIMENSION,
     FAISS_INDEX_PATH,
     FAISS_MAPPING_PATH,
-    SIMILARITY_THRESHOLD,
+    SEMANTIC_CACHE_THRESHOLD,
 )
-
 from app.exceptions import VectorStoreException
 from app.logger import logger
 
@@ -116,7 +115,7 @@ class VectorStoreService:
     def search(
         self,
         embedding: list[float],
-        threshold: float = SIMILARITY_THRESHOLD
+        threshold: float = SEMANTIC_CACHE_THRESHOLD
     ):
 
         try:

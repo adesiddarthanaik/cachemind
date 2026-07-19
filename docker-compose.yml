@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+
+  # ==========================================================
+  # CacheMind API
+  # ==========================================================
+
+  cachemind:
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: cachemind
+
+    restart: unless-stopped
+
+    ports:
+      - "8000:8000"
+
+    env_file:
+      - .env
+
+    depends_on:
+      redis:
+        condition: service_healthy
+
+    volumes:
+      - ./data:/app/data
+
+    networks:
+      - cachemind-network
+
+  # ==========================================================
+  # Redis
+  # ==========================================================
+
+  redis:
+
+    image: redis:8-alpine
+
+    container_name: cachemind-redis
+
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    command: redis-server --appendonly yes
+
+    volumes:
+      - redis-data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - cachemind-network
+
+# ==========================================================
+# Volumes
+# ==========================================================
+
+volumes:
+
+  redis-data:
+
+# ==========================================================
+# Networks
+# ==========================================================
+
+networks:
+
+  cachemind-network:
+
+    driver: bridge
