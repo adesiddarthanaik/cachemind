@@ -12,10 +12,7 @@ load_dotenv()
 
 class OllamaProvider(BaseProvider):
 
-    BASE_URL = os.getenv(
-        "OLLAMA_BASE_URL",
-        "http://localhost:11434"
-    )
+    BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
     def generate(
         self,
@@ -51,15 +48,11 @@ class OllamaProvider(BaseProvider):
 
         except requests.exceptions.RequestException as e:
 
-            raise ProviderException(
-                f"Ollama request failed: {e}"
-            )
+            raise ProviderException(f"Ollama request failed: {e}")
 
         except Exception as e:
 
-            raise ProviderException(
-                f"Unexpected Ollama error: {e}"
-            )
+            raise ProviderException(f"Unexpected Ollama error: {e}")
 
     def _stream_response(self, response):
 
@@ -82,6 +75,4 @@ class OllamaProvider(BaseProvider):
 
         except Exception as e:
 
-            raise ProviderException(
-                f"Streaming failed: {e}"
-            )
+            raise ProviderException(f"Streaming failed: {e}")

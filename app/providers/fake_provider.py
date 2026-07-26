@@ -5,11 +5,7 @@ from app.providers.base_provider import BaseProvider
 
 class FakeProvider(BaseProvider):
 
-    def generate(
-        self,
-        prompt: str,
-        model: str
-    ) -> str:
+    def generate(self, prompt: str, model: str) -> str:
 
         time.sleep(2)
 

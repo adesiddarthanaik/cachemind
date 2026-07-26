@@ -35,64 +35,45 @@ class VectorStoreService:
 
                 if os.path.exists(FAISS_INDEX_PATH):
 
-                    cls._instance.index = faiss.read_index(
-                        FAISS_INDEX_PATH
-                    )
+                    cls._instance.index = faiss.read_index(FAISS_INDEX_PATH)
 
                     logger.info("Loaded FAISS index.")
 
                 else:
 
-                    cls._instance.index = faiss.IndexFlatIP(
-                        dimension
-                    )
+                    cls._instance.index = faiss.IndexFlatIP(dimension)
 
                     logger.info("Created new FAISS index.")
 
                 if os.path.exists(FAISS_MAPPING_PATH):
 
-                    with open(
-                        FAISS_MAPPING_PATH,
-                        "r"
-                    ) as f:
+                    with open(FAISS_MAPPING_PATH, "r") as f:
 
                         mapping = json.load(f)
 
                     cls._instance.id_to_cache_id = {
-                        int(k): int(v)
-                        for k, v in mapping.items()
+                        int(k): int(v) for k, v in mapping.items()
                     }
 
                 else:
 
                     cls._instance.id_to_cache_id = {}
 
-                cls._instance.next_id = len(
-                    cls._instance.id_to_cache_id
-                )
+                cls._instance.next_id = len(cls._instance.id_to_cache_id)
 
             except Exception as e:
 
-                raise VectorStoreException(
-                    f"Failed initializing Vector Store: {e}"
-                )
+                raise VectorStoreException(f"Failed initializing Vector Store: {e}")
 
         return cls._instance
 
     # -----------------------------------------
 
-    def add(
-        self,
-        cache_id: int,
-        embedding: list[float]
-    ):
+    def add(self, cache_id: int, embedding: list[float]):
 
         try:
 
-            vector = np.array(
-                embedding,
-                dtype=np.float32
-            ).reshape(1, -1)
+            vector = np.array(embedding, dtype=np.float32).reshape(1, -1)
 
             faiss.normalize_L2(vector)
 
@@ -106,16 +87,12 @@ class VectorStoreService:
 
         except Exception as e:
 
-            raise VectorStoreException(
-                f"Failed adding vector: {e}"
-            )
+            raise VectorStoreException(f"Failed adding vector: {e}")
 
     # -----------------------------------------
 
     def search(
-        self,
-        embedding: list[float],
-        threshold: float = SEMANTIC_CACHE_THRESHOLD
+        self, embedding: list[float], threshold: float = SEMANTIC_CACHE_THRESHOLD
     ):
 
         try:
@@ -123,10 +100,7 @@ class VectorStoreService:
             if self.index.ntotal == 0:
                 return None
 
-            query = np.array(
-                embedding,
-                dtype=np.float32
-            ).reshape(1, -1)
+            query = np.array(embedding, dtype=np.float32).reshape(1, -1)
 
             faiss.normalize_L2(query)
 
@@ -149,9 +123,7 @@ class VectorStoreService:
 
         except Exception as e:
 
-            raise VectorStoreException(
-                f"Vector search failed: {e}"
-            )
+            raise VectorStoreException(f"Vector search failed: {e}")
 
     # -----------------------------------------
 
@@ -159,27 +131,15 @@ class VectorStoreService:
 
         try:
 
-            faiss.write_index(
-                self.index,
-                FAISS_INDEX_PATH
-            )
+            faiss.write_index(self.index, FAISS_INDEX_PATH)
 
-            with open(
-                FAISS_MAPPING_PATH,
-                "w"
-            ) as f:
+            with open(FAISS_MAPPING_PATH, "w") as f:
 
-                json.dump(
-                    self.id_to_cache_id,
-                    f,
-                    indent=4
-                )
+                json.dump(self.id_to_cache_id, f, indent=4)
 
         except Exception as e:
 
-            raise VectorStoreException(
-                f"Failed saving FAISS index: {e}"
-            )
+            raise VectorStoreException(f"Failed saving FAISS index: {e}")
 
     # -----------------------------------------
 

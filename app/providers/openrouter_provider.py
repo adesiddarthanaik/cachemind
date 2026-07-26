@@ -30,9 +30,7 @@ class OpenRouterProvider(BaseProvider):
         print("=" * 60 + "\n")
 
         if not self.api_key:
-            raise ProviderException(
-                "OPENROUTER_API_KEY not found."
-            )
+            raise ProviderException("OPENROUTER_API_KEY not found.")
 
     def generate(
         self,
@@ -86,11 +84,7 @@ class OpenRouterProvider(BaseProvider):
             ) from e
 
         except requests.exceptions.RequestException as e:
-            raise ProviderException(
-                f"OpenRouter Request Error: {e}"
-            ) from e
+            raise ProviderException(f"OpenRouter Request Error: {e}") from e
 
         except Exception as e:
-            raise ProviderException(
-                f"OpenRouter Error: {e}"
-            ) from e
+            raise ProviderException(f"OpenRouter Error: {e}") from e

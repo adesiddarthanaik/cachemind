@@ -17,7 +17,6 @@ class ProviderFactory:
         "gemma": OpenRouterProvider,
         "claude": OpenRouterProvider,
         "gemini": OpenRouterProvider,
-
         # ---------- Local Models ----------
         "llama": OllamaProvider,
         "mistral": OllamaProvider,
@@ -29,9 +28,7 @@ class ProviderFactory:
     def get_provider(cls, model: str):
 
         if not model:
-            raise ProviderException(
-                "Model name cannot be empty."
-            )
+            raise ProviderException("Model name cannot be empty.")
 
         model = model.strip().lower()
 
@@ -43,6 +40,5 @@ class ProviderFactory:
         supported = ", ".join(sorted(cls.PROVIDERS.keys()))
 
         raise ProviderException(
-            f"Unsupported model '{model}'. "
-            f"Supported prefixes: {supported}"
+            f"Unsupported model '{model}'. " f"Supported prefixes: {supported}"
         )

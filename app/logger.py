@@ -12,8 +12,7 @@ class RequestIDFilter(logging.Filter):
 logging.basicConfig(
     level=logging.INFO,
     format=(
-        "%(asctime)s | %(levelname)s | %(name)s | "
-        "[%(request_id)s] | %(message)s"
+        "%(asctime)s | %(levelname)s | %(name)s | " "[%(request_id)s] | %(message)s"
     ),
 )
 

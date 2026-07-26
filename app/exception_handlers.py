@@ -1,13 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.exceptions import (
-    CacheMindException,
-    CacheException,
-    EmbeddingException,
-    ProviderException,
-    VectorStoreException,
-)
+from app.exceptions import CacheMindException
 
 
 def register_exception_handlers(app: FastAPI):

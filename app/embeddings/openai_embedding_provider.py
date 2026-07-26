@@ -13,8 +13,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
     def generate_embedding(self, text: str) -> list[float]:
         response = self.client.embeddings.create(
-            model=settings.EMBEDDING_MODEL,
-            input=text
+            model=settings.EMBEDDING_MODEL, input=text
         )
 
-        return response.data[0].embedding 
+        return response.data[0].embedding

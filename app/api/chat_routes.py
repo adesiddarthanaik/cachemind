@@ -19,10 +19,7 @@ chat_service = ChatService()
 
 
 @router.post("/chat/completions")
-def chat_completion(
-    request: ChatCompletionRequest,
-    response: Response
-):
+def chat_completion(request: ChatCompletionRequest, response: Response):
 
     # ------------------------------------
     # Extract System Prompt + User Prompt
@@ -53,7 +50,7 @@ def chat_completion(
         model=request.model,
         temperature=request.temperature,
         max_tokens=request.max_tokens,
-        system_prompt=system_prompt
+        system_prompt=system_prompt,
     )
 
     # ------------------------------------
@@ -64,9 +61,7 @@ def chat_completion(
 
         response.headers["X-Cache"] = "HIT"
         response.headers["X-Provider"] = "semantic-cache"
-        response.headers["X-Similarity"] = str(
-            result["similarity"]
-        )
+        response.headers["X-Similarity"] = str(result["similarity"])
 
     else:
 
@@ -87,16 +82,9 @@ def chat_completion(
         choices=[
             Choice(
                 index=0,
-                message=ResponseMessage(
-                    role="assistant",
-                    content=answer
-                ),
-                finish_reason="stop"
+                message=ResponseMessage(role="assistant", content=answer),
+                finish_reason="stop",
             )
         ],
-        usage=Usage(
-            prompt_tokens=10,
-            completion_tokens=15,
-            total_tokens=25
-        )
+        usage=Usage(prompt_tokens=10, completion_tokens=15, total_tokens=25),
     )

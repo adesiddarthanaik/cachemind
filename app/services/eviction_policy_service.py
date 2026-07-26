@@ -23,10 +23,7 @@ class EvictionPolicyService:
         if not entries:
             return None
 
-        return min(
-            entries,
-            key=lambda entry: entry.last_accessed
-        )
+        return min(entries, key=lambda entry: entry.last_accessed)
 
     @staticmethod
     def lfu(entries: List[CacheEntry]) -> Optional[CacheEntry]:
@@ -37,10 +34,7 @@ class EvictionPolicyService:
         if not entries:
             return None
 
-        return min(
-            entries,
-            key=lambda entry: entry.access_count
-        )
+        return min(entries, key=lambda entry: entry.access_count)
 
     @staticmethod
     def ttl(entries: List[CacheEntry]) -> Optional[CacheEntry]:
@@ -50,19 +44,12 @@ class EvictionPolicyService:
 
         now = datetime.now()
 
-        expired = [
-            entry
-            for entry in entries
-            if entry.expires_at <= now
-        ]
+        expired = [entry for entry in entries if entry.expires_at <= now]
 
         if not expired:
             return None
 
-        return min(
-            expired,
-            key=lambda entry: entry.expires_at
-        )
+        return min(expired, key=lambda entry: entry.expires_at)
 
     @staticmethod
     def select_victim(
@@ -84,6 +71,4 @@ class EvictionPolicyService:
         if policy == "ttl":
             return EvictionPolicyService.ttl(entries)
 
-        raise ValueError(
-            f"Unsupported eviction policy: {policy}"
-        )
+        raise ValueError(f"Unsupported eviction policy: {policy}")

@@ -21,17 +21,11 @@ class HealthService:
 
         self.vector_store = VectorStoreService()
 
-        self.ollama_url = os.getenv(
-            "OLLAMA_BASE_URL",
-            "http://localhost:11434"
-        )
+        self.ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
     def check(self):
 
-        report = {
-            "status": "healthy",
-            "providers": {}
-        }
+        report = {"status": "healthy", "providers": {}}
 
         # ---------------------------------
         # Ollama

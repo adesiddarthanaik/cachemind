@@ -25,50 +25,38 @@ class CachePolicyService:
         # Similarity threshold
         if similarity < self.threshold:
 
-            logger.info(
-                f"Cache rejected (similarity={similarity:.4f})"
-            )
+            logger.info(f"Cache rejected (similarity={similarity:.4f})")
 
             return False
 
         # Model mismatch
         if cached_entry.model != model:
 
-            logger.info(
-                "Cache rejected (model mismatch)"
-            )
+            logger.info("Cache rejected (model mismatch)")
 
             return False
 
         # System Prompt mismatch
         if cached_entry.system_prompt_hash != system_prompt_hash:
 
-            logger.info(
-                "Cache rejected (system prompt mismatch)"
-            )
+            logger.info("Cache rejected (system prompt mismatch)")
 
             return False
 
         # Temperature mismatch
         if cached_entry.temperature != temperature:
 
-            logger.info(
-                "Cache rejected (temperature mismatch)"
-            )
+            logger.info("Cache rejected (temperature mismatch)")
 
             return False
 
         # Max Tokens mismatch
         if cached_entry.max_tokens != max_tokens:
 
-            logger.info(
-                "Cache rejected (max_tokens mismatch)"
-            )
+            logger.info("Cache rejected (max_tokens mismatch)")
 
             return False
 
-        logger.info(
-            "Cache accepted by Policy Engine."
-        )
+        logger.info("Cache accepted by Policy Engine.")
 
         return True

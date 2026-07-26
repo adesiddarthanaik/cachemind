@@ -100,17 +100,13 @@ class ChatService:
 
         try:
 
-            logger.info(
-                f"Total vectors: {self.vector_store.total_vectors()}"
-            )
+            logger.info(f"Total vectors: {self.vector_store.total_vectors()}")
 
             result = self.vector_store.search(embedding)
 
             cache_elapsed = time.perf_counter() - cache_start
 
-            logger.info(
-                f"FAISS Search Result: {result}"
-            )
+            logger.info(f"FAISS Search Result: {result}")
 
         except VectorStoreException:
 
@@ -154,16 +150,12 @@ class ChatService:
                         f"Semantic Cache HIT (Similarity={result['score']:.4f})"
                     )
 
-                    self.metrics.cache_hit(
-                        result["score"]
-                    )
+                    self.metrics.cache_hit(result["score"])
                     CACHE_HIT_COUNTER.inc()
 
                     self.metrics.cache_time(cache_elapsed)
 
-                    self.metrics.save_tokens(
-                        entry.response
-                    )
+                    self.metrics.save_tokens(entry.response)
 
                     # ---------------------------------
                     # Stream Cached Response
@@ -171,45 +163,25 @@ class ChatService:
 
                     if stream:
 
-                        logger.info(
-                            "Streaming cached response."
-                        )
+                        logger.info("Streaming cached response.")
 
-                        elapsed = (
-                            time.perf_counter()
-                            - start_time
-                        )
+                        elapsed = time.perf_counter() - start_time
 
-                        self.metrics.request_time(
-                            elapsed
-                        )
+                        self.metrics.request_time(elapsed)
                         REQUEST_LATENCY.observe(elapsed)
 
-                        logger.info(
-                            f"Request Latency: {elapsed*1000:.2f} ms"
-                        )
+                        logger.info(f"Request Latency: {elapsed*1000:.2f} ms")
 
-                        return self._stream_cached_response(
-                            entry.response
-                        )
+                        return self._stream_cached_response(entry.response)
 
-                    elapsed = (
-                        time.perf_counter()
-                        - start_time
-                    )
+                    elapsed = time.perf_counter() - start_time
 
-                    self.metrics.request_time(
-                        elapsed
-                    )
+                    self.metrics.request_time(elapsed)
                     REQUEST_LATENCY.observe(elapsed)
 
-                    logger.info(
-                        f"Request Latency: {elapsed*1000:.2f} ms"
-                    )
+                    logger.info(f"Request Latency: {elapsed*1000:.2f} ms")
 
-                    logger.info(
-                        f"Cache Latency: {cache_elapsed*1000:.2f} ms"
-                    )
+                    logger.info(f"Cache Latency: {cache_elapsed*1000:.2f} ms")
 
                     return {
                         "source": "semantic-cache",
@@ -217,15 +189,11 @@ class ChatService:
                         "response": entry.response,
                     }
 
-                logger.warning(
-                    "Metadata mismatch. Ignoring cached response."
-                )
+                logger.warning("Metadata mismatch. Ignoring cached response.")
 
             else:
 
-                logger.warning(
-                    "Redis cache entry not found."
-                )
+                logger.warning("Redis cache entry not found.")
 
         else:
 
@@ -240,19 +208,13 @@ class ChatService:
 
         try:
 
-            logger.info(
-                f"Calling ProviderFactory ({model})"
-            )
+            logger.info(f"Calling ProviderFactory ({model})")
 
-            logger.info(
-                f"Requested Model: {model}"
-            )
+            logger.info(f"Requested Model: {model}")
 
             provider = ProviderFactory.get_provider(model)
 
-            logger.info(
-                f"Selected Provider: {provider.__class__.__name__}"
-            )
+            logger.info(f"Selected Provider: {provider.__class__.__name__}")
 
             try:
 
@@ -267,28 +229,17 @@ class ChatService:
                     stream=stream,
                 )
 
-                provider_elapsed = (
-                    time.perf_counter()
-                    - provider_start
-                )
+                provider_elapsed = time.perf_counter() - provider_start
 
-                self.metrics.provider_time(
-                    provider_elapsed
-                )
+                self.metrics.provider_time(provider_elapsed)
 
-                logger.info(
-                    "Primary provider response received."
-                )
+                logger.info("Primary provider response received.")
 
             except Exception as primary_error:
 
-                logger.warning(
-                    f"Primary provider failed: {primary_error}"
-                )
+                logger.warning(f"Primary provider failed: {primary_error}")
 
-                logger.info(
-                    "Attempting OpenRouter fallback..."
-                )
+                logger.info("Attempting OpenRouter fallback...")
 
                 from app.providers.openrouter_provider import OpenRouterProvider
 
@@ -300,9 +251,7 @@ class ChatService:
                     stream=False,
                 )
 
-                logger.info(
-                    "Fallback provider response received."
-                )
+                logger.info("Fallback provider response received.")
 
             # ---------------------------------
             # Stream Provider Response
@@ -310,38 +259,25 @@ class ChatService:
 
             if stream:
 
-                logger.info(
-                    "Streaming provider response."
-                )
+                logger.info("Streaming provider response.")
 
-                elapsed = (
-                    time.perf_counter()
-                    - start_time
-                )
+                elapsed = time.perf_counter() - start_time
 
-                self.metrics.request_time(
-                    elapsed
-                )
+                self.metrics.request_time(elapsed)
                 REQUEST_LATENCY.observe(elapsed)
 
-                logger.info(
-                    f"Request Latency: {elapsed*1000:.2f} ms"
-                )
+                logger.info(f"Request Latency: {elapsed*1000:.2f} ms")
 
                 return answer
 
         except ProviderException:
 
-            logger.exception(
-                "Provider selection failed."
-            )
+            logger.exception("Provider selection failed.")
             raise
 
         except Exception:
 
-            logger.exception(
-                "Provider request failed."
-            )
+            logger.exception("Provider request failed.")
             raise
 
         # ---------------------------------
@@ -350,9 +286,7 @@ class ChatService:
 
         cache_id = self.vector_store.next_id
 
-        logger.info(
-            f"Saving Cache ID: {cache_id}"
-        )
+        logger.info(f"Saving Cache ID: {cache_id}")
 
         try:
 
@@ -371,15 +305,11 @@ class ChatService:
                 embedding=embedding,
             )
 
-            logger.info(
-                "Response stored in Redis and FAISS."
-            )
+            logger.info("Response stored in Redis and FAISS.")
 
         except (CacheException, VectorStoreException):
 
-            logger.exception(
-                "Failed to store response."
-            )
+            logger.exception("Failed to store response.")
 
             raise
 
@@ -387,25 +317,16 @@ class ChatService:
         # Return Provider Response
         # ---------------------------------
 
-        elapsed = (
-            time.perf_counter()
-            - start_time
-        )
+        elapsed = time.perf_counter() - start_time
 
-        self.metrics.request_time(
-            elapsed
-        )
+        self.metrics.request_time(elapsed)
         REQUEST_LATENCY.observe(elapsed)
 
         PROVIDER_LATENCY.observe(provider_elapsed)
 
-        logger.info(
-            f"Request Latency: {elapsed*1000:.2f} ms"
-        )
+        logger.info(f"Request Latency: {elapsed*1000:.2f} ms")
 
-        logger.info(
-            f"Provider Latency: {provider_elapsed*1000:.2f} ms"
-        )
+        logger.info(f"Provider Latency: {provider_elapsed*1000:.2f} ms")
 
         return {
             "source": "provider",

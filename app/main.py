@@ -18,10 +18,7 @@ from app.exceptions import (
     VectorStoreException,
 )
 
-app = FastAPI(
-    title="CacheMind",
-    version="1.0.0"
-)
+app = FastAPI(title="CacheMind", version="1.0.0")
 
 app.add_middleware(RequestIDMiddleware)
 
@@ -37,6 +34,7 @@ metrics_service = MetricsService()
 # ---------------------------------
 # Request Models
 # ---------------------------------
+
 
 class Message(BaseModel):
     role: str
@@ -56,18 +54,15 @@ class ChatRequest(BaseModel):
 # Routes
 # ---------------------------------
 
+
 @app.get("/")
 def root():
-    return {
-        "message": "Welcome to CacheMind"
-    }
+    return {"message": "Welcome to CacheMind"}
 
 
 @app.get("/health")
 def health():
-    return {
-        "status": "healthy"
-    }
+    return {"status": "healthy"}
 
 
 @app.get("/providers/health")

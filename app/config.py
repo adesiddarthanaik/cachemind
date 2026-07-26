@@ -18,11 +18,7 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 CACHE_TTL = int(os.getenv("CACHE_TTL", 3600))
 
 
-
-CACHEMIND_API_KEY = os.getenv(
-    "CACHEMIND_API_KEY",
-    "cm_change_me"
-)
+CACHEMIND_API_KEY = os.getenv("CACHEMIND_API_KEY", "cm_change_me")
 
 
 # ==========================================================

@@ -21,13 +21,9 @@ class OpenAIProvider(BaseProvider):
 
         if not api_key:
 
-            raise ProviderException(
-                "OPENAI_API_KEY not found in .env"
-            )
+            raise ProviderException("OPENAI_API_KEY not found in .env")
 
-        self.client = OpenAI(
-            api_key=api_key
-        )
+        self.client = OpenAI(api_key=api_key)
 
     def generate(
         self,
@@ -38,18 +34,14 @@ class OpenAIProvider(BaseProvider):
         try:
 
             response = self.client.chat.completions.create(
-
                 model=model,
-
                 messages=[
                     {
                         "role": "user",
                         "content": prompt,
                     }
                 ],
-
                 temperature=0.7,
-
                 max_tokens=512,
             )
 
@@ -57,6 +49,4 @@ class OpenAIProvider(BaseProvider):
 
         except Exception as e:
 
-            raise ProviderException(
-                f"OpenAI API Error: {e}"
-            )
+            raise ProviderException(f"OpenAI API Error: {e}")

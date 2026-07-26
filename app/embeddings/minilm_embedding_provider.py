@@ -12,9 +12,7 @@ class MiniLMEmbeddingProvider(EmbeddingProvider):
 
     def generate_embedding(self, text: str) -> list[float]:
         embedding = self.model.encode(
-            text,
-            convert_to_numpy=True,
-            normalize_embeddings=True
+            text, convert_to_numpy=True, normalize_embeddings=True
         )
 
         return embedding.tolist()

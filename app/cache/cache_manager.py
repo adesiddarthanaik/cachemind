@@ -25,16 +25,12 @@ class CacheManager:
         try:
 
             self.client = redis.Redis(
-                host=REDIS_HOST,
-                port=REDIS_PORT,
-                decode_responses=True
+                host=REDIS_HOST, port=REDIS_PORT, decode_responses=True
             )
 
         except Exception as e:
 
-            raise CacheException(
-                f"Failed to connect to Redis: {e}"
-            )
+            raise CacheException(f"Failed to connect to Redis: {e}")
 
     # -----------------------------------------
 
@@ -42,11 +38,7 @@ class CacheManager:
 
     def _update_entry(self, entry: "CacheEntry"):
 
-        self.client.set(
-            f"cache:{entry.id}",
-            entry.model_dump_json(),
-            ex=entry.ttl
-        )
+        self.client.set(f"cache:{entry.id}", entry.model_dump_json(), ex=entry.ttl)
 
     # -----------------------------------------
 
@@ -66,9 +58,7 @@ class CacheManager:
 
         if victim:
 
-            logger.info(
-                f"Evicting cache entry {victim.id}"
-            )
+            logger.info(f"Evicting cache entry {victim.id}")
 
             self.delete(victim.id)
 
@@ -83,7 +73,7 @@ class CacheManager:
         system_prompt_hash: str,
         temperature: float,
         max_tokens: int,
-        ttl: int = CACHE_TTL
+        ttl: int = CACHE_TTL,
     ):
 
         try:
@@ -112,9 +102,7 @@ class CacheManager:
 
         except Exception as e:
 
-            raise CacheException(
-                f"Failed to store cache entry: {e}"
-            )
+            raise CacheException(f"Failed to store cache entry: {e}")
 
     # -----------------------------------------
 
@@ -122,9 +110,7 @@ class CacheManager:
 
         try:
 
-            data = self.client.get(
-                f"cache:{cache_id}"
-            )
+            data = self.client.get(f"cache:{cache_id}")
 
             if data is None:
                 return None
@@ -146,9 +132,7 @@ class CacheManager:
 
         except Exception as e:
 
-            raise CacheException(
-                f"Failed to retrieve cache entry: {e}"
-            )
+            raise CacheException(f"Failed to retrieve cache entry: {e}")
 
     # -----------------------------------------
 
@@ -156,15 +140,11 @@ class CacheManager:
 
         try:
 
-            self.client.delete(
-                f"cache:{cache_id}"
-            )
+            self.client.delete(f"cache:{cache_id}")
 
         except Exception as e:
 
-            raise CacheException(
-                f"Failed to delete cache entry: {e}"
-            )
+            raise CacheException(f"Failed to delete cache entry: {e}")
 
     # -----------------------------------------
 
@@ -172,15 +152,11 @@ class CacheManager:
 
         try:
 
-            return self.client.exists(
-                f"cache:{cache_id}"
-            )
+            return self.client.exists(f"cache:{cache_id}")
 
         except Exception as e:
 
-            raise CacheException(
-                f"Failed to check cache entry: {e}"
-            )
+            raise CacheException(f"Failed to check cache entry: {e}")
 
     # -----------------------------------------
 
@@ -191,15 +167,11 @@ class CacheManager:
 
         try:
 
-            return len(
-                self.client.keys("cache:*")
-            )
+            return len(self.client.keys("cache:*"))
 
         except Exception as e:
 
-            raise CacheException(
-                f"Failed to count cache entries: {e}"
-            )
+            raise CacheException(f"Failed to count cache entries: {e}")
 
     # -----------------------------------------
 
@@ -218,17 +190,13 @@ class CacheManager:
 
                 if data:
 
-                    entries.append(
-                        CacheEntry.model_validate_json(data)
-                    )
+                    entries.append(CacheEntry.model_validate_json(data))
 
             return entries
 
         except Exception as e:
 
-            raise CacheException(
-                f"Failed to retrieve cache entries: {e}"
-            )
+            raise CacheException(f"Failed to retrieve cache entries: {e}")
 
     # -----------------------------------------
 

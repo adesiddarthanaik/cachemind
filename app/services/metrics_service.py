@@ -92,9 +92,7 @@ class MetricsService:
 
     def save_tokens(self, text: str):
 
-        estimated_tokens = int(
-            len(text.split()) * 1.3
-        )
+        estimated_tokens = int(len(text.split()) * 1.3)
 
         self.tokens_saved += estimated_tokens
 
@@ -134,51 +132,33 @@ class MetricsService:
 
         if self.total_requests:
 
-            cache_hit_rate = (
-                self.cache_hits
-                / self.total_requests
-            ) * 100
+            cache_hit_rate = (self.cache_hits / self.total_requests) * 100
 
         average_similarity = 0
 
         if self.cache_hits:
 
-            average_similarity = (
-                self.total_similarity
-                / self.cache_hits
-            )
+            average_similarity = self.total_similarity / self.cache_hits
 
         average_request_time = 0
 
         if self.total_requests:
 
-            average_request_time = (
-                self.total_request_time
-                / self.total_requests
-            )
+            average_request_time = self.total_request_time / self.total_requests
 
         average_cache_time = 0
 
         if self.cache_hits:
 
-            average_cache_time = (
-                self.total_cache_time
-                / self.cache_hits
-            )
+            average_cache_time = self.total_cache_time / self.cache_hits
 
         average_provider_time = 0
 
         if self.provider_calls:
 
-            average_provider_time = (
-                self.total_provider_time
-                / self.provider_calls
-            )
+            average_provider_time = self.total_provider_time / self.provider_calls
 
-        uptime = round(
-            time.time() - self.started_at,
-            2
-        )
+        uptime = round(time.time() - self.started_at, 2)
 
         estimated_cost = round(
             (self.tokens_saved / 1_000_000) * 0.15,
@@ -186,43 +166,31 @@ class MetricsService:
         )
 
         return {
-
             "total_requests": self.total_requests,
-
             "cache_hits": self.cache_hits,
-
             "cache_misses": self.cache_misses,
-
             "provider_calls": self.provider_calls,
-
             "cache_hit_rate": round(
                 cache_hit_rate,
                 2,
             ),
-
             "average_similarity": round(
                 average_similarity,
                 4,
             ),
-
             "average_request_time_ms": round(
                 average_request_time * 1000,
                 2,
             ),
-
             "average_cache_time_ms": round(
                 average_cache_time * 1000,
                 2,
             ),
-
             "average_provider_time_ms": round(
                 average_provider_time * 1000,
                 2,
             ),
-
             "uptime_seconds": uptime,
-
             "estimated_tokens_saved": self.tokens_saved,
-
             "estimated_cost_saved_usd": estimated_cost,
         }

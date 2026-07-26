@@ -20,10 +20,7 @@ class EmbeddingService:
                 f"Unsupported embedding provider: {EMBEDDING_PROVIDER}"
             )
 
-    def generate(
-        self,
-        text: str
-    ) -> list[float]:
+    def generate(self, text: str) -> list[float]:
 
         try:
 
