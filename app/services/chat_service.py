@@ -5,6 +5,14 @@ from app.services.embedding_service import EmbeddingService
 from app.services.vector_store_service import VectorStoreService
 from app.services.cache_policy_service import CachePolicyService
 from app.services.metrics_service import MetricsService
+from app.metrics.prometheus import (
+    REQUEST_COUNTER,
+    CACHE_HIT_COUNTER,
+    CACHE_MISS_COUNTER,
+    PROVIDER_REQUEST_COUNTER,
+    REQUEST_LATENCY,
+    PROVIDER_LATENCY,
+)
 from app.providers.provider_factory import ProviderFactory
 from app.utils.hashing import hash_text
 from app.logger import logger
@@ -56,6 +64,7 @@ class ChatService:
         start_time = time.perf_counter()
 
         self.metrics.request()
+        REQUEST_COUNTER.inc()
 
         # ---------------------------------
         # Generate Metadata
@@ -148,6 +157,7 @@ class ChatService:
                     self.metrics.cache_hit(
                         result["score"]
                     )
+                    CACHE_HIT_COUNTER.inc()
 
                     self.metrics.cache_time(cache_elapsed)
 
@@ -173,6 +183,7 @@ class ChatService:
                         self.metrics.request_time(
                             elapsed
                         )
+                        REQUEST_LATENCY.observe(elapsed)
 
                         logger.info(
                             f"Request Latency: {elapsed*1000:.2f} ms"
@@ -190,6 +201,7 @@ class ChatService:
                     self.metrics.request_time(
                         elapsed
                     )
+                    REQUEST_LATENCY.observe(elapsed)
 
                     logger.info(
                         f"Request Latency: {elapsed*1000:.2f} ms"
@@ -220,6 +232,7 @@ class ChatService:
             logger.info("Semantic Cache MISS.")
 
             self.metrics.cache_miss()
+            CACHE_MISS_COUNTER.inc()
 
         # ---------------------------------
         # Provider Call
@@ -244,6 +257,7 @@ class ChatService:
             try:
 
                 self.metrics.provider_call()
+                PROVIDER_REQUEST_COUNTER.inc()
 
                 provider_start = time.perf_counter()
 
@@ -308,6 +322,7 @@ class ChatService:
                 self.metrics.request_time(
                     elapsed
                 )
+                REQUEST_LATENCY.observe(elapsed)
 
                 logger.info(
                     f"Request Latency: {elapsed*1000:.2f} ms"
@@ -380,6 +395,9 @@ class ChatService:
         self.metrics.request_time(
             elapsed
         )
+        REQUEST_LATENCY.observe(elapsed)
+
+        PROVIDER_LATENCY.observe(provider_elapsed)
 
         logger.info(
             f"Request Latency: {elapsed*1000:.2f} ms"

@@ -1,10 +1,15 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import StreamingResponse, Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+
 from pydantic import BaseModel
 
+from app.middleware.request_id import RequestIDMiddleware
 from app.services.chat_service import ChatService
 from app.services.health_service import HealthService
 from app.services.metrics_service import MetricsService
+
+from app.auth.api_key import verify_api_key
 
 from app.exceptions import (
     CacheException,
@@ -17,6 +22,8 @@ app = FastAPI(
     title="CacheMind",
     version="1.0.0"
 )
+
+app.add_middleware(RequestIDMiddleware)
 
 # ---------------------------------
 # Services
@@ -65,27 +72,32 @@ def health():
 
 @app.get("/providers/health")
 def providers_health():
-
     return health_service.check()
 
 
-@app.get("/metrics")
+# -------------------------------
+# Prometheus Metrics Endpoint
+# -------------------------------
+@app.get("/metrics", tags=["Monitoring"])
 def metrics():
-
-    return metrics_service.stats()
+    return Response(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 
 @app.post("/v1/chat/completions")
-def chat(request: ChatRequest):
+def chat(
+    request: ChatRequest,
+    _: str = Depends(verify_api_key),
+):
 
     try:
 
         user_prompt = ""
 
         for message in request.messages:
-
             if message.role == "user":
-
                 user_prompt = message.content
 
         result = chat_service.ask(
@@ -98,7 +110,6 @@ def chat(request: ChatRequest):
         )
 
         if request.stream:
-
             return StreamingResponse(
                 result,
                 media_type="text/plain",
