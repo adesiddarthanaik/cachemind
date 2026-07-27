@@ -10,6 +10,7 @@ load_dotenv()
 # ==========================================================
 # Redis
 # ==========================================================
+REDIS_URL = os.getenv("REDIS_URL")
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 

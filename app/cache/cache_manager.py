@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from app.exceptions import CacheException
 from app.config import (
+    REDIS_URL,
     REDIS_HOST,
     REDIS_PORT,
     CACHE_TTL,
@@ -24,13 +25,35 @@ class CacheManager:
 
         try:
 
-            self.client = redis.Redis(
-                host=REDIS_HOST, port=REDIS_PORT, decode_responses=True
-            )
+            if REDIS_URL:
+
+                logger.info("Connecting to Redis using REDIS_URL")
+
+                self.client = redis.from_url(
+                    REDIS_URL,
+                    decode_responses=True,
+                )
+
+            else:
+
+                logger.info(
+                    f"Connecting to Redis at {REDIS_HOST}:{REDIS_PORT}"
+                )
+
+                self.client = redis.Redis(
+                    host=REDIS_HOST,
+                    port=REDIS_PORT,
+                    decode_responses=True,
+                )
+
+            # Verify the connection immediately
+            self.client.ping()
 
         except Exception as e:
 
-            raise CacheException(f"Failed to connect to Redis: {e}")
+            raise CacheException(
+                f"Failed to connect to Redis: {e}"
+            )
 
     # -----------------------------------------
 
