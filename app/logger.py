@@ -12,9 +12,16 @@ class RequestIDFilter(logging.Filter):
 logging.basicConfig(
     level=logging.INFO,
     format=(
-        "%(asctime)s | %(levelname)s | %(name)s | " "[%(request_id)s] | %(message)s"
+        "%(asctime)s | %(levelname)s | %(name)s | "
+        "[%(request_id)s] | %(message)s"
     ),
 )
 
+# IMPORTANT:
+# Attach the filter to every handler created by basicConfig.
+root_logger = logging.getLogger()
+
+for handler in root_logger.handlers:
+    handler.addFilter(RequestIDFilter())
+
 logger = logging.getLogger("CacheMind")
-logger.addFilter(RequestIDFilter())
